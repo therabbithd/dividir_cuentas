@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.booleanResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.dividir_cuentas.ui.theme.Dividir_cuentasTheme
 
@@ -28,7 +26,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MyScreen() {
     // Aquí se declara el estado del campo de texto
-    var textcan by remember { mutableStateOf("") }
+    var textcan by remember { mutableStateOf("")  }
     var textcom by remember { mutableStateOf("") }
     var checksw by remember { mutableStateOf(true) }
     var sliderposition by remember { mutableFloatStateOf(0f) }
@@ -42,12 +40,13 @@ fun MyScreen() {
             OutlinedTextField(
                 value = textcan,
                 onValueChange = { newValue -> textcan = newValue },
-                label = { Text("Cantidad") }
+                label = { Text("Cantidad") },
+
             )
             OutlinedTextField(
                 value = textcom,
                 onValueChange = { newValue -> textcom = newValue },
-                label = { Text("Comensales") }
+                label = { Text("Comensales") },
             )
             Text("Redondear")
             Switch(
@@ -56,34 +55,35 @@ fun MyScreen() {
                     checksw = it
                 }
             )
-            Text("Valoracion")
+            Text("Valoración")
             Slider(
                 value = sliderposition,
                 onValueChange = {
                     sliderposition = it
                 },
                 steps = 5,
-                valueRange = (0f .. 5f)
+                valueRange = (0f..5f)
             )
-            if(checksw){
-                Text("Propina: "+ calcular_propina(textcan,sliderposition))
+            // Validación y cálculo de la propina
+            if (checksw && textcan.isNotEmpty() && textcan.toIntOrNull() != null) {
+                val propina = calcular_propina(textcan, sliderposition)
+                Text("Propina: ${"%.2f".format(propina)}")
             }
-
-            
         }
-
     }
 }
-fun calcular_propina(textcan:String,sliderpos:Float):Int{
-    val can = textcan.toInt()
-    var prop = when(sliderpos){
-        0f -> 0
+
+// Función para calcular la propina
+fun calcular_propina(textcan: String, sliderpos: Float): Double {
+    val can = textcan.toIntOrNull() ?: 0  // Si no es un número válido, se asume 0
+    val prop = when(sliderpos) {
+        0f -> 0.0
         1f -> can * 0.05
         2f -> can * 0.1
         3f -> can * 0.15
         4f -> can * 0.2
         5f -> can * 0.25
-        else -> 0
+        else -> 0.0
     }
-    return prop.toInt()
+    return prop
 }
