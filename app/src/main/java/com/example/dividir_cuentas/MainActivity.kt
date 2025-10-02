@@ -61,7 +61,7 @@ fun MyScreen() {
                 onValueChange = {
                     sliderposition = it
                 },
-                steps = 5,
+                steps = 4,
                 valueRange = (0f..5f)
             )
             // Validación y cálculo de la propina
@@ -81,7 +81,7 @@ fun calcular_propina(textcan: String, sliderpos: Float): Double {
         1f -> can * 0.05
         2f -> can * 0.1
         3f -> can * 0.15
-        4f -> can * 0.2
+        4f -> can * 0.20
         5f -> can * 0.25
         else -> 0.0
     }
