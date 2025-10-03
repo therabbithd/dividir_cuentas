@@ -3,8 +3,8 @@ package com.example.dividir_cuentas
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -15,7 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.dividir_cuentas.ui.theme.Dividir_cuentasTheme
+import com.example.dividir_cuentas.ui.theme.DividirCuentasTheme
+
+
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
@@ -23,7 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Dividir_cuentasTheme {
+            DividirCuentasTheme {
                 MyScreen()
             }
         }
@@ -34,11 +37,13 @@ class MainActivity : ComponentActivity() {
 fun MyScreen() {
     var textcan by remember { mutableStateOf("") }
     var textcom by remember { mutableStateOf("") }
-    var checksw by remember { mutableStateOf(true) }
-    var sliderposition by remember { mutableFloatStateOf(0f) }
+    var incluirPropinaYRedondear by remember { mutableStateOf(false) }
+    var tipPercentage by remember { mutableStateOf(10f) }
+    var propina by remember { mutableStateOf(0.0) }
+    var totalPorPersona by remember { mutableStateOf(0.0) }
+    var totalCuenta by remember { mutableStateOf(0.0) }
+    var showResults by remember { mutableStateOf(false) }
 
-    var propinaCalculada by remember { mutableStateOf<Double?>(null) }
-    var totalPorPersona by remember { mutableStateOf<Double?>(null) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -50,7 +55,10 @@ fun MyScreen() {
         ) {
             OutlinedTextField(
                 value = textcan,
-                onValueChange = { textcan = it },
+                onValueChange = {
+                    textcan = it
+                    showResults = false
+                },
                 label = { Text("Cantidad de la cuenta") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
@@ -58,34 +66,43 @@ fun MyScreen() {
 
             OutlinedTextField(
                 value = textcom,
-                onValueChange = { textcom = it },
+                onValueChange = {
+                    textcom = it
+                    showResults = false
+                },
                 label = { Text("Número de comensales") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("¿Incluir propina?")
+                Text("¿Incluir propina y redondear pago?")
                 Spacer(Modifier.weight(1f))
                 Switch(
-                    checked = checksw,
-                    onCheckedChange = { checksw = it }
+                    checked = incluirPropinaYRedondear,
+                    onCheckedChange = {
+                        incluirPropinaYRedondear = it
+                        showResults = false
+                    }
                 )
             }
 
-            if (checksw) {
-                Slider(
-                    value = sliderposition,
-                    onValueChange = { sliderposition = it },
-                    steps = 4,
-                    valueRange = 0f..5f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.secondary,
-                        activeTrackColor = MaterialTheme.colorScheme.secondary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
+            AnimatedVisibility(visible = incluirPropinaYRedondear) {
+                Column {
+                    Text("Porcentaje de propina: ${tipPercentage.roundToInt()}%")
+                    Slider(
+                        value = tipPercentage,
+                        onValueChange = {
+                            tipPercentage = it
+                            showResults = false
+                        },
+                        valueRange = 0f..30f,
+                        steps = 5,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                )
+                }
             }
+
 
             Spacer(Modifier.height(16.dp))
 
@@ -94,46 +111,60 @@ fun MyScreen() {
                     val cantidad = textcan.toDoubleOrNull() ?: 0.0
                     val comensales = textcom.toIntOrNull() ?: 1
 
-                    val propina = if (checksw) {
-                        calcular_propina(cantidad, sliderposition)
+                    if (comensales > 0) {
+                        if (incluirPropinaYRedondear) {
+                            val propinaSlider = cantidad * tipPercentage / 100
+                            val cantidadConPropina = cantidad + propinaSlider
+
+                            val totalPorPersonaSinRedondear = cantidadConPropina / comensales
+
+                            val totalRedondeadoPorPersona = ceil(totalPorPersonaSinRedondear)
+
+                            totalPorPersona = totalRedondeadoPorPersona
+                            totalCuenta = totalRedondeadoPorPersona * comensales
+
+                            propina = totalCuenta - cantidad
+
+                        } else {
+                            propina = 0.0
+                            totalCuenta = cantidad
+                            totalPorPersona = cantidad / comensales
+                        }
+                        showResults = true
                     } else {
-                        0.0
+                        showResults = false
                     }
-
-                    val totalCuenta = cantidad + propina
-                    val totalPorComensal = if (comensales > 0) totalCuenta / comensales else 0.0
-
-                    propinaCalculada = propina
-                    totalPorPersona = totalPorComensal
                 },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+                modifier = Modifier.fillMaxWidth(),
+
+                ) {
                 Text("CALCULAR")
             }
 
             Spacer(Modifier.height(24.dp))
+            if (showResults) {
+                val totalCuentaFormatted = String.format("%.2f", totalCuenta)
+                val totalPorPersonaFormatted = String.format("%.2f", totalPorPersona)
+                val propinaFormatted = String.format("%.2f", propina)
 
-            propinaCalculada?.let { propina ->
-                totalPorPersona?.let { total ->
-                    Text("Propina a añadir: ${"%.2f".format(propina)} €")
+                Text(
+                    "Total cuenta: $totalCuentaFormatted €",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Text(
+                    "Total por persona: $totalPorPersonaFormatted €",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                if (propina > 0.009) {
                     Text(
-                        text = "Total por persona: ${"%.2f".format(total)} €",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(top = 8.dp)
+                        "Propina incluida: $propinaFormatted €",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
             }
         }
-    }
-}
-
-fun calcular_propina(cantidad: Double, sliderpos: Float): Double {
-    return when (sliderpos.roundToInt()) {
-        1 -> cantidad * 0.05
-        2 -> cantidad * 0.10
-        3 -> cantidad * 0.15
-        4 -> cantidad * 0.20
-        5 -> cantidad * 0.25
-        else -> 0.0
     }
 }

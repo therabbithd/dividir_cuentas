@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">dividir_cuentas</string>
+    <string name="bill_amount">Bill Amount</string>
+    <string name="number_of_diners">Number of Diners</string>
+    <string name="include_tip_and_round">Include tip and round up?</string>
+    <string name="tip_percentage">Tip Percentage: %1$d%%</string>
+    <string name="calculate">Calculate</string>
+    <string name="total_bill">Total Bill: %1$s €</string>
+    <string name="total_per_person">Total per Person: %1$s €</string>
+    <string name="tip_included">Tip Included: %1$s €</string>
 </resources>
